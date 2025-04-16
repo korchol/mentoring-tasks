@@ -4,6 +4,7 @@
  * “Task #0 – {iteration number}”.
  */
 using System;
+using System.Threading.Tasks;
 
 namespace MultiThreading.Task1._100Tasks
 {
@@ -12,27 +13,36 @@ namespace MultiThreading.Task1._100Tasks
         const int TaskAmount = 100;
         const int MaxIterationsCount = 1000;
 
-        static void Main(string[] args)
+        public static void Main()
         {
-            Console.WriteLine(".Net Mentoring Program. Multi threading V1.");
-            Console.WriteLine("1.	Write a program, which creates an array of 100 Tasks, runs them and waits all of them are not finished.");
-            Console.WriteLine("Each Task should iterate from 1 to 1000 and print into the console the following string:");
-            Console.WriteLine("“Task #0 – {iteration number}”.");
-            Console.WriteLine();
-            
             HundredTasks();
-
             Console.ReadLine();
         }
 
-        static void HundredTasks()
+        private static void HundredTasks()
         {
-            // feel free to add your code here
+            var tasks = new Task[TaskAmount];
+            for (int t = 0; t < TaskAmount; t++)
+            {
+                int taskNumber = t;
+                tasks[taskNumber] = Task.Run(() => ExecuteTask(taskNumber));
+            }
+
+            Task.WaitAll(tasks);
+            Console.WriteLine("Done");
         }
 
-        static void Output(int taskNumber, int iterationNumber)
+        private static void ExecuteTask(int taskNumber)
         {
-            Console.WriteLine($"Task #{taskNumber} – {iterationNumber}");
+            for (int iterationNumber = 0; iterationNumber < MaxIterationsCount; iterationNumber++)
+            {
+                Output(taskNumber, iterationNumber);
+            }
+        }
+
+        private static void Output(int taskNumber, int i)
+        {
+            Console.WriteLine($"Task #{taskNumber + 1} – {i + 1}");
         }
     }
 }
