@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MultiThreading.Task3.MatrixMultiplier.Matrices;
 using MultiThreading.Task3.MatrixMultiplier.Multipliers;
@@ -18,11 +19,43 @@ namespace MultiThreading.Task3.MatrixMultiplier.Tests
         [TestMethod]
         public void ParallelEfficiencyTest()
         {
-            // todo: implement a test method to check the size of the matrix which makes parallel multiplication more effective than
-            // todo: the regular one
+            int thresholdSize = FindParallelEfficiencyThreshold();
+            Console.WriteLine($"Parallel multiplication becomes faster than regular multiplication at matrix size: {thresholdSize}x{thresholdSize}");
+            Assert.IsTrue(thresholdSize > 0, "Threshold size should be greater than 0.");
         }
 
         #region private methods
+
+        private int FindParallelEfficiencyThreshold()
+        {
+            const int maxIterations = 500;
+            long regularTime, parallelTime;
+
+            for (int size = 1; size <= maxIterations; size += 1)
+            {
+                var first = new Matrix(size, size, true);
+                var second = new Matrix(size, size, true);
+
+                var commonMultiplier = new MatricesMultiplier();
+                var parallelMultiplier = new MatricesMultiplierParallel();
+
+                regularTime = MeasureExecutionTime(() => commonMultiplier.Multiply(first, second));
+                parallelTime = MeasureExecutionTime(() => parallelMultiplier.Multiply(first, second));
+
+                if (parallelTime < regularTime)
+                    return size;
+            }
+
+            return -1;
+        }
+
+        private long MeasureExecutionTime(Action action)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            action();
+            stopwatch.Stop();
+            return stopwatch.ElapsedMilliseconds;
+        }
 
         void TestMatrix3On3(IMatricesMultiplier matrixMultiplier)
         {

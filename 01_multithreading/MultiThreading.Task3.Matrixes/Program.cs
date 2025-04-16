@@ -19,7 +19,7 @@ namespace MultiThreading.Task3.MatrixMultiplier
             Console.WriteLine("3.	Write a program, which multiplies two matrices and uses class Parallel. ");
             Console.WriteLine();
 
-            const byte matrixSize = 7; // todo: use any number you like or enter from console
+            byte matrixSize = ReadMatrixSizeFromConsole();
             CreateAndProcessMatrices(matrixSize);
             Console.ReadLine();
         }
@@ -27,10 +27,10 @@ namespace MultiThreading.Task3.MatrixMultiplier
         private static void CreateAndProcessMatrices(byte sizeOfMatrix)
         {
             Console.WriteLine("Multiplying...");
-            var firstMatrix = new Matrix(sizeOfMatrix, sizeOfMatrix);
-            var secondMatrix = new Matrix(sizeOfMatrix, sizeOfMatrix);
+            var firstMatrix = new Matrix(sizeOfMatrix, sizeOfMatrix, true);
+            var secondMatrix = new Matrix(sizeOfMatrix, sizeOfMatrix, true);
 
-            IMatrix resultMatrix = new MatricesMultiplier().Multiply(firstMatrix, secondMatrix);
+            IMatrix resultMatrix = new MatricesMultiplierParallel().Multiply(firstMatrix, secondMatrix);
 
             Console.WriteLine("firstMatrix:");
             firstMatrix.Print();
@@ -38,6 +38,22 @@ namespace MultiThreading.Task3.MatrixMultiplier
             secondMatrix.Print();
             Console.WriteLine("resultMatrix:");
             resultMatrix.Print();
+        }
+
+        private static byte ReadMatrixSizeFromConsole()
+        {
+            while (true)
+            {
+                Console.Write("Enter matrix size (positive integer between 1 and 255): ");
+                string input = Console.ReadLine();
+
+                if (byte.TryParse(input, out byte matrixSize) && matrixSize > 0)
+                {
+                    return matrixSize;
+                }
+
+                Console.WriteLine("Invalid input");
+            }
         }
     }
 }
