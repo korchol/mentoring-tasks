@@ -12,6 +12,7 @@ namespace MultiThreading.Task5.Threads.SharedCollection
 {
     class Program
     {
+        private static readonly object _lock = new object();
         const int ElementsNumber = 10;
         static readonly AutoResetEvent AddEvent = new(false);
         static readonly AutoResetEvent PrintEvent = new(false);
@@ -32,11 +33,15 @@ namespace MultiThreading.Task5.Threads.SharedCollection
 
             Console.WriteLine("Completed.");
         }
+
         private static void AddElements(List<int> collection)
         {
             for (int i = 0; i < ElementsNumber; i++)
             {
-                collection.Add(i);
+                lock (_lock)
+                {
+                    collection.Add(i);
+                }
                 Console.WriteLine($"Added element: {i}");
                 PrintEvent.Set();
                 AddEvent.WaitOne();
