@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35919.96
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataCaptureService", "DataCaptureService.csproj", "{E4EAE981-FE1A-4314-8E64-511C490F3D62}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonLogic", "..\CommonLogic\CommonLogic.csproj", "{31B864D2-EC2C-BD30-D26A-A0B863EDD3C5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E4EAE981-FE1A-4314-8E64-511C490F3D62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4EAE981-FE1A-4314-8E64-511C490F3D62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4EAE981-FE1A-4314-8E64-511C490F3D62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4EAE981-FE1A-4314-8E64-511C490F3D62}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31B864D2-EC2C-BD30-D26A-A0B863EDD3C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31B864D2-EC2C-BD30-D26A-A0B863EDD3C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31B864D2-EC2C-BD30-D26A-A0B863EDD3C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31B864D2-EC2C-BD30-D26A-A0B863EDD3C5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {95324ECB-98FB-43C9-9576-8AFF2D79CD8A}
+	EndGlobalSection
+EndGlobal
