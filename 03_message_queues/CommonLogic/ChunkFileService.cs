@@ -1,5 +1,7 @@
 ﻿using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using System.Text;
+using Polly;
 
 namespace CommonLogic
 {
@@ -9,22 +11,23 @@ namespace CommonLogic
         public int ChunkIndex { get; private set; }
         public int TotalChunks { get; private set; }
         public byte[] Bytes { get; private set; }
+        public string ParentFileHash { get; private set; }
 
-
-        public Chunk(string fileName, int chunkIndex, int totalChunks, byte[] bytes)
+        public Chunk(string fileName, int chunkIndex, int totalChunks, string hash, byte[] bytes)
         {
             FileName = fileName;
             ChunkIndex = chunkIndex;
             TotalChunks = totalChunks;
             Bytes = bytes;
+            ParentFileHash = hash;
         }
 
         public static Chunk FromMessageBytes(byte[] body)
         {
             var message = Encoding.UTF8.GetString(body);
-            var parts = message.Split('|', 4);
+            var parts = message.Split('|', 5);
 
-            if (parts.Length < 4)
+            if (parts.Length < 5)
             {
                 throw new FormatException("Invalid message format.");
             }
@@ -33,13 +36,14 @@ namespace CommonLogic
                 parts[0],
                 int.Parse(parts[1]),
                 int.Parse(parts[2]),
-                Convert.FromBase64String(parts[3])
+                parts[3],
+                Convert.FromBase64String(parts[4])
                 );
         }
 
         public byte[] ToMessageBytes()
         {
-            string metadata = $"{FileName}|{ChunkIndex}|{TotalChunks}";
+            string metadata = $"{FileName}|{ChunkIndex}|{TotalChunks}|{ParentFileHash}";
             return Encoding.UTF8.GetBytes($"{metadata}|{Convert.ToBase64String(Bytes)}");
         }
 
@@ -51,10 +55,12 @@ namespace CommonLogic
 
     public class ChunkFile
     {
-        private const int ChunkSize = 10 * 1024 * 1024;
+        private const int ChunkSize = 10 * 1024;
 
+        public Guid Guid { get; private set; }
         public byte[] Bytes { get; private set; }
         public string FileName { get; private set; }
+        public string FileHash { get; private set; }
         public int FileSize => Bytes.Length;
         public int ChunksCount => (int)GetTotalChunksNumber();
 
@@ -62,13 +68,20 @@ namespace CommonLogic
         {
             FileName = fileName;
             Bytes = bytes;
+            FileHash = CalculateHash(bytes);
+        }
+
+        private static string CalculateHash(byte[] bytes)
+        {
+            using var sha256 = SHA256.Create();
+            return Convert.ToBase64String(sha256.ComputeHash(bytes));
         }
 
         public IEnumerable<Chunk> GetChunks()
         {
             for (int i = 0; i < ChunksCount; i++)
             {
-                yield return new Chunk(FileName, i + 1, ChunksCount, GetChunk(i));
+                yield return new Chunk(FileName, i + 1, ChunksCount, FileHash, GetChunk(i));
             }
         }
 
@@ -101,23 +114,19 @@ namespace CommonLogic
 
         public async static Task<ChunkFile> CreateFromFilePathAsync(string filePath)
         {
-            while (true)
-            {
-                try
-                {
-                    using (FileStream fs = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.None))
+            var retryPolicy = Policy
+                .Handle<IOException>()
+                .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(1),
+                    (exception, timeSpan, retryCount, context) =>
                     {
-                        break;
-                    }
-                }
-                catch (IOException)
-                {
-                    Console.WriteLine($"Waiting for file '{filePath}' to be ready...");
-                    await Task.Delay(500);
-                }
-            }
+                        Console.WriteLine($"[WARN] Retrying file read. Attempt {retryCount}: {exception.Message}");
+                    });
 
-            var fileBytes = await File.ReadAllBytesAsync(filePath);
+            byte[] fileBytes = await retryPolicy.ExecuteAsync(async () =>
+            {
+                return await File.ReadAllBytesAsync(filePath);
+            });
+
             return new ChunkFile(Path.GetFileName(filePath), fileBytes);
         }
 
@@ -161,7 +170,15 @@ namespace CommonLogic
                 .SelectMany(chunk => chunk.Bytes)
                 .ToArray();
 
-            return new ChunkFile(FileName, fileBytes);
+            var restoredFile = new ChunkFile(FileName, fileBytes);
+
+            string originalHash = sortedChunks.First().ParentFileHash;
+            if (restoredFile.FileHash != originalHash)
+            {
+                throw new InvalidOperationException("File integrity check failed: Hash mismatch.");
+            }
+
+            return restoredFile;
         }
     }
 }
