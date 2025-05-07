@@ -66,7 +66,7 @@ namespace DataProcessingService
         {
             Console.WriteLine($"All chunks received for file '{chunkFile.FileName}'. Materializing...");
 
-            var outputPath = Path.Combine(outputFolderPath, chunkFile.FileName);
+            var outputPath = Path.Combine(outputFolderPath, Guid.NewGuid() + "_" + chunkFile.FileName);
             await File.WriteAllBytesAsync(outputPath, chunkFile.Bytes);
 
             Console.WriteLine($"File '{chunkFile.FileName}' has been successfully saved to '{outputPath}'.");

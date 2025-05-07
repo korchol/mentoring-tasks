@@ -1,4 +1,5 @@
 ﻿using CommonLogic;
+using Polly;
 using RabbitMQ.Client;
 
 namespace DataCaptureService
@@ -87,13 +88,24 @@ namespace DataCaptureService
                 DeliveryMode = DeliveryModes.Persistent
             };
 
-            await channel.BasicPublishAsync(
-                exchange: "",
-                routingKey: QueueName,
-                mandatory: false,
-                basicProperties: props,
-                body: new ReadOnlyMemory<byte>(message)
-            );
+            var retryPolicy = Policy
+                .Handle<Exception>() // Handle any exception
+                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                    (exception, timeSpan, retryCount, context) =>
+                    {
+                        Console.WriteLine($"[WARN] Retrying message publish. Attempt {retryCount}: {exception.Message}");
+                    });
+
+            await retryPolicy.ExecuteAsync(async () =>
+            {
+                await channel.BasicPublishAsync(
+                    exchange: "",
+                    routingKey: QueueName,
+                    mandatory: false,
+                    basicProperties: props,
+                    body: new ReadOnlyMemory<byte>(message)
+                );
+            });
         }
     }
 }
