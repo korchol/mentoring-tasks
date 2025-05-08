@@ -25,6 +25,48 @@ namespace Expressions.Task3.E3SQueryProvider
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
+            if (node.Method.DeclaringType == typeof(string))
+            {
+                var memberExpression = node.Object as MemberExpression;
+                if (memberExpression == null)
+                    throw new NotSupportedException($"Method '{node.Method.Name}' is not supported on non-member expressions.");
+
+                Visit(memberExpression);
+                _resultStringBuilder.Append("(");
+
+                var argumentExpression = node.Arguments[0] as ConstantExpression;
+                if (argumentExpression == null)
+                    throw new NotSupportedException($"Argument for method '{node.Method.Name}' must be a constant.");
+
+                switch (node.Method.Name)
+                {
+                    case "StartsWith":
+                        _resultStringBuilder.Append(argumentExpression.Value);
+                        _resultStringBuilder.Append("*");
+                        break;
+
+                    case "EndsWith":
+                        _resultStringBuilder.Append("*");
+                        _resultStringBuilder.Append(argumentExpression.Value);
+                        break;
+
+                    case "Contains":
+                        _resultStringBuilder.Append("*");
+                        _resultStringBuilder.Append(argumentExpression.Value);
+                        _resultStringBuilder.Append("*");
+                        break;
+
+                    case "Equals":
+                        _resultStringBuilder.Append(argumentExpression.Value);
+                        break;
+
+                    default:
+                        throw new NotSupportedException($"Method '{node.Method.Name}' is not supported.");
+                }
+
+                _resultStringBuilder.Append(")");
+                return node;
+            }
             if (node.Method.DeclaringType == typeof(Queryable)
                 && node.Method.Name == "Where")
             {
@@ -40,17 +82,31 @@ namespace Expressions.Task3.E3SQueryProvider
         {
             switch (node.NodeType)
             {
-                case ExpressionType.Equal:
-                    if (node.Left.NodeType != ExpressionType.MemberAccess)
-                        throw new NotSupportedException($"Left operand should be property or field: {node.NodeType}");
-
-                    if (node.Right.NodeType != ExpressionType.Constant)
-                        throw new NotSupportedException($"Right operand should be constant: {node.NodeType}");
-
+                case ExpressionType.AndAlso:
+                    _resultStringBuilder.Append("{\"statements\": [");
+                    _resultStringBuilder.Append("{\"query\":\"");
                     Visit(node.Left);
-                    _resultStringBuilder.Append("(");
+                    _resultStringBuilder.Append("\"},");
+                    _resultStringBuilder.Append("{\"query\":\"");
                     Visit(node.Right);
-                    _resultStringBuilder.Append(")");
+                    _resultStringBuilder.Append("\"}]}");
+                    break;
+
+                case ExpressionType.Equal:
+                    if (node.Left.NodeType == ExpressionType.Constant && node.Right.NodeType == ExpressionType.MemberAccess)
+                    {
+                        Visit(node.Right);
+                        _resultStringBuilder.Append("(");
+                        Visit(node.Left);
+                        _resultStringBuilder.Append(")");
+                    }
+                    else if (node.Left.NodeType == ExpressionType.MemberAccess && node.Right.NodeType == ExpressionType.Constant)
+                    {
+                        Visit(node.Left);
+                        _resultStringBuilder.Append("(");
+                        Visit(node.Right);
+                        _resultStringBuilder.Append(")");
+                    }
                     break;
 
                 default:
