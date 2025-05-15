@@ -42,12 +42,19 @@ namespace GameOfLife
             System.Diagnostics.Process.Start(link);
             Close();
         }
-        
+
         protected override void OnClosed(EventArgs e)
         {
-            //Unsubscribe();
+            Dispose();
             base.OnClosed(e);
-        } 
+        }
+
+        public void Dispose()
+        {
+            adTimer.Stop();
+            adTimer.Tick -= ChangeAds;
+            MouseDown -= OnClick;
+        }
 
         public void Unsubscribe()
         {
