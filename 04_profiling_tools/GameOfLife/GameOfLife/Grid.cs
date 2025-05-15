@@ -77,30 +77,60 @@ namespace GameOfLife
         public void UpdateGraphics()
         {
             for (int i = 0; i < SizeX; i++)
+            {
                 for (int j = 0; j < SizeY; j++)
-                    cellsVisuals[i, j].Fill = cells[i, j].IsAlive
-                                                  ? (cells[i, j].Age < 2 ? Brushes.White : Brushes.DarkGray)
-                                                  : Brushes.Gray;
+                {
+                    Brush newColor = cells[i, j].IsAlive
+                        ? (cells[i, j].Age < 2 ? Brushes.White : Brushes.DarkGray)
+                        : Brushes.Gray;
+
+                    // update only if color changed
+                    if (cellsVisuals[i, j].Fill != newColor)
+                    {
+                        cellsVisuals[i, j].Fill = newColor;
+                    }
+                }
+            }
         }
 
         public void InitCellsVisuals()
         {
             for (int i = 0; i < SizeX; i++)
+            {
                 for (int j = 0; j < SizeY; j++)
                 {
-                    cellsVisuals[i, j] = new Ellipse();
-                    cellsVisuals[i, j].Width = cellsVisuals[i, j].Height = 5;
-                    double left = cells[i, j].PositionX;
-                    double top = cells[i, j].PositionY;
-                    cellsVisuals[i, j].Margin = new Thickness(left, top, 0, 0);
-                    cellsVisuals[i, j].Fill = Brushes.Gray;
+                    cellsVisuals[i, j] = new Ellipse
+                    {
+                        Width = 5,
+                        Height = 5,
+                        Margin = new Thickness(cells[i, j].PositionX, cells[i, j].PositionY, 0, 0),
+                        Fill = Brushes.Gray
+                    };
                     drawCanvas.Children.Add(cellsVisuals[i, j]);
-
-                    cellsVisuals[i, j].MouseMove += MouseMove;
-                    cellsVisuals[i, j].MouseLeftButtonDown += MouseMove;
                 }
-            UpdateGraphics();
+            }
 
+            // subscribe by canvas insted of every single ellipse
+            drawCanvas.MouseMove += CanvasMouseMove;
+            drawCanvas.MouseLeftButtonDown += CanvasMouseMove;
+            UpdateGraphics();
+        }
+
+        private void CanvasMouseMove(object sender, MouseEventArgs e)
+        {
+            Point position = e.GetPosition(drawCanvas);
+            int i = (int)(position.X / 5);
+            int j = (int)(position.Y / 5);
+
+            if (i >= 0 && i < SizeX && j >= 0 && j < SizeY)
+            {
+                if (e.LeftButton == MouseButtonState.Pressed && !cells[i, j].IsAlive)
+                {
+                    cells[i, j].IsAlive = true;
+                    cells[i, j].Age = 0;
+                    cellsVisuals[i, j].Fill = Brushes.White;
+                }
+            }
         }
 
 
@@ -118,12 +148,10 @@ namespace GameOfLife
 
         public void UpdateToNextGeneration()
         {
-            for (int i = 0; i < SizeX; i++)
-                for (int j = 0; j < SizeY; j++)
-                {
-                    cells[i, j].IsAlive = nextGenerationCells[i, j].IsAlive;
-                    cells[i, j].Age = nextGenerationCells[i, j].Age;
-                }
+            // reassign instead of big iteration
+            var temp = cells;
+            cells = nextGenerationCells;
+            nextGenerationCells = temp;
 
             UpdateGraphics();
         }
@@ -138,69 +166,42 @@ namespace GameOfLife
             {
                 for (int j = 0; j < SizeY; j++)
                 {
-//                    nextGenerationCells[i, j] = CalculateNextGeneration(i,j);          // UNOPTIMIZED
-                    CalculateNextGeneration(i, j, ref alive, ref age);   // OPTIMIZED
-                    nextGenerationCells[i, j].IsAlive = alive;  // OPTIMIZED
-                    nextGenerationCells[i, j].Age = age;  // OPTIMIZED
+                    CalculateNextGeneration(i, j, ref alive, ref age);
+                    nextGenerationCells[i, j].IsAlive = alive;
+                    nextGenerationCells[i, j].Age = age;
                 }
             }
             UpdateToNextGeneration();
         }
 
-        public Cell CalculateNextGeneration(int row, int column)    // UNOPTIMIZED
-        {
-            bool alive;
-            int count, age;
-
-            alive = cells[row, column].IsAlive;
-            age = cells[row, column].Age;
-            count = CountNeighbors(row, column);
-
-            if (alive && count < 2)
-                return new Cell(row, column, 0, false);
-            
-            if (alive && (count == 2 || count == 3))
-            {
-                cells[row, column].Age++;
-                return new Cell(row, column, cells[row, column].Age, true);
-            }
-
-            if (alive && count > 3)
-                return new Cell(row, column, 0, false);
-            
-            if (!alive && count == 3)
-                return new Cell(row, column, 0, true);
-            
-            return new Cell(row, column, 0, false);
-        }
-
-        public void CalculateNextGeneration(int row, int column, ref bool isAlive, ref int age)     // OPTIMIZED
+        public void CalculateNextGeneration(int row, int column, ref bool isAlive, ref int age)
         {
             isAlive = cells[row, column].IsAlive;
             age = cells[row, column].Age;
 
             int count = CountNeighbors(row, column);
 
+            // simple avoiding too mamy unneccessary ifs
             if (isAlive && count < 2)
             {
                 isAlive = false;
                 age = 0;
             }
 
-            if (isAlive && (count == 2 || count == 3))
+            else if (isAlive && (count == 2 || count == 3))
             {
                 cells[row, column].Age++;
                 isAlive = true;
                 age = cells[row, column].Age;
             }
 
-            if (isAlive && count > 3)
+            else if (isAlive && count > 3)
             {
                 isAlive = false;
                 age = 0;
             }
 
-            if (!isAlive && count == 3)
+            else if (!isAlive && count == 3)
             {
                 isAlive = true;
                 age = 0;
