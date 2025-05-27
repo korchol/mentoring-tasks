@@ -7,6 +7,9 @@
  * The results could be printed in console or checked via Debugger using any Visualizer.
  */
 using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
+using AgileObjects.ReadableExpressions;
 
 namespace ExpressionTrees.Task1.ExpressionsTransformer
 {
@@ -17,9 +20,38 @@ namespace ExpressionTrees.Task1.ExpressionsTransformer
             Console.WriteLine("Expression Visitor for increment/decrement.");
             Console.WriteLine();
 
-            // todo: feel free to add your code here
+            var replaceDictionary = new Dictionary<string, object> { { "x", 10 } };
+            var visitor = new IncDecExpressionVisitor(replaceDictionary);
+
+            var expression = PrepareExpressionManually();
+
+            Console.WriteLine("Original Expression:");
+            Console.WriteLine(expression.ToReadableString());
+            Console.WriteLine(expression.Body.NodeType);
+
+            Console.WriteLine();
+
+            var transformedExpression = (Expression<Func<int>>)visitor.Visit(expression);
+
+            Console.WriteLine("Transformed Expression:");
+            Console.WriteLine(transformedExpression.ToReadableString());
+            Console.WriteLine(transformedExpression.Body.NodeType);
 
             Console.ReadLine();
+        }
+
+        private static LambdaExpression PrepareExpressionManually()
+        {
+            // left
+            var left = Expression.Parameter(typeof(int), "x");
+
+            // right
+            var right = Expression.Constant(1);
+
+            // method
+            var adding = Expression.Add(left, right);
+
+            return Expression.Lambda<Func<int, int>>(adding, left);
         }
     }
 }

@@ -6,15 +6,55 @@ namespace ExpressionTrees.Task2.ExpressionMapping.Tests
     [TestClass]
     public class ExpressionMappingTests
     {
-        // todo: add as many test methods as you wish, but they should be enough to cover basic scenarios of the mapping generator
-
         [TestMethod]
-        public void TestMethod1()
+        public void Should_Map_Properties_With_Same_Names_And_Types()
         {
+            // Arrange
             var mapGenerator = new MappingGenerator();
             var mapper = mapGenerator.Generate<Foo, Bar>();
 
-            var res = mapper.Map(new Foo());
+            var source = new Foo { Id = 1, Name = "Test" };
+
+            // Act
+            var result = mapper.Map(source);
+
+            // Assert
+            Assert.AreEqual(source.Id, result.Id);
+            Assert.AreEqual(source.Name, result.Name);
+        }
+
+        [TestMethod]
+        public void Should_Ignore_Extra_Properties_In_Source()
+        {
+            // Arrange
+            var mapGenerator = new MappingGenerator();
+            var mapper = mapGenerator.Generate<Foo, Bar>();
+
+            var source = new Foo { Id = 1, Name = "Test" };
+
+            // Act
+            var result = mapper.Map(source);
+
+            // Assert
+            Assert.AreEqual(source.Id, result.Id);
+            Assert.AreEqual(source.Name, result.Name);
+        }
+
+        [TestMethod]
+        public void Should_Ignore_Extra_Properties_In_Destination()
+        {
+            // Arrange
+            var mapGenerator = new MappingGenerator();
+            var mapper = mapGenerator.Generate<Bar, Foo>();
+
+            var source = new Bar { Id = 1, Name = "Test" };
+
+            // Act
+            var result = mapper.Map(source);
+
+            // Assert
+            Assert.AreEqual(source.Id, result.Id);
+            Assert.AreEqual(source.Name, result.Name);
         }
     }
 }
